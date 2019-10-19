@@ -175,6 +175,17 @@
     
     WFCCConversationInfo *info = [[WFCCIMService sharedWFCIMService] getConversationInfo:self.conversation];
     self.chatInputBar.draft = info.draft;
+    
+    if (self.conversation.type == Group_Type) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSArray<WFCCGroupMember *> *groupMembers = [[WFCCIMService sharedWFCIMService] getGroupMembers:self.conversation.target forceUpdate:NO];
+            NSMutableArray *memberIds = [[NSMutableArray alloc] init];
+            for (WFCCGroupMember *member in groupMembers) {
+                [memberIds addObject:member.memberId];
+            }
+            [[WFCCIMService sharedWFCIMService] getUserInfos:memberIds inGroup:self.conversation.target];
+        });
+    }
 }
 
 - (void)setLoadingMore:(BOOL)loadingMore {
@@ -560,6 +571,7 @@
 
 - (void)viewWillAppear:(BOOL)animated {
   [super viewWillAppear:animated];
+    [self.chatInputBar willAppear];
     if(self.conversation.type == Single_Type) {
         WFCCUserInfo *userInfo = [[WFCCIMService sharedWFCIMService] getUserInfo:self.conversation.target refresh:YES];
         self.targetUser = userInfo;
@@ -863,7 +875,7 @@
         [[NSNotificationCenter defaultCenter] postNotificationName:kVoiceMessageStartPlaying object:@(self.playingMessageId)];
     } else if([model.message.content isKindOfClass:[WFCCVideoMessageContent class]]) {
         WFCCVideoMessageContent *videoMsg = (WFCCVideoMessageContent *)model.message.content;
-        NSURL *url = [NSURL fileURLWithPath:videoMsg.localPath];
+        NSURL *url = [NSURL fileURLWithPath:[videoMsg.localPath stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         
         if (!self.videoPlayerViewController) {
             self.videoPlayerViewController = [VideoPlayerKit videoPlayerWithContainingView:self.view optionalTopView:nil hideTopViewWithControls:YES];
@@ -1279,7 +1291,7 @@
     WFCCMessage *msg = [self.imageMsgs objectAtIndex:index];
     if ([[msg.content class] getContentType] == MESSAGE_CONTENT_TYPE_IMAGE) {
         WFCCImageMessageContent *imgContent = (WFCCImageMessageContent *)msg.content;
-        return [NSURL URLWithString:imgContent.remoteUrl];
+        return [NSURL URLWithString:[imgContent.remoteUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
     }
     return nil;
 }
@@ -1439,11 +1451,15 @@
         hud.label.text = WFCString(@"Recalling");
         [hud showAnimated:YES];
         __weak typeof(self) ws = self;
+        long messageId = self.cell4Menu.model.message.messageId;
+        WFCUMessageCellBase *cell = self.cell4Menu;
         [[WFCCIMService sharedWFCIMService] recall:self.cell4Menu.model.message success:^{
             dispatch_async(dispatch_get_main_queue(), ^{
                 [hud hideAnimated:YES];
-                ws.cell4Menu.model.message = [[WFCCIMService sharedWFCIMService] getMessage:ws.cell4Menu.model.message.messageId];
-                [ws.collectionView reloadItemsAtIndexPaths:@[[ws.collectionView indexPathForCell:ws.cell4Menu]]];
+                if (cell.model.message.messageId == messageId) {
+                    cell.model.message = [[WFCCIMService sharedWFCIMService] getMessage:messageId];
+                    [ws.collectionView reloadItemsAtIndexPaths:@[[ws.collectionView indexPathForCell:cell]]];
+                }
             });
         } error:^(int error_code) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -1469,10 +1485,9 @@
     UIMenuController *menu = [UIMenuController sharedMenuController];
     [menu setMenuItems:nil];
     __weak typeof(self)ws = self;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_async(dispatch_get_main_queue(), ^{
         ws.cell4Menu = nil;
     });
-    
 }
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {

@@ -35,7 +35,7 @@
     CGFloat screenWidth = [UIScreen mainScreen].bounds.size.width;
     
     self.channelPortrait = [[UIImageView alloc] initWithFrame:CGRectMake((screenWidth - portraitWidth)/2, top, portraitWidth, portraitWidth)];
-    [self.channelPortrait sd_setImageWithURL:[NSURL URLWithString:self.channelInfo.portrait] placeholderImage:[UIImage imageNamed:@"channel_default_portrait"]];
+    [self.channelPortrait sd_setImageWithURL:[NSURL URLWithString:[self.channelInfo.portrait stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]] placeholderImage:[UIImage imageNamed:@"channel_default_portrait"]];
     
     top += portraitWidth;
     top += 20;
@@ -290,7 +290,7 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info {
     hud.label.text = WFCString(@"PhotoUploading");
     [hud showAnimated:YES];
     
-    [[WFCCIMService sharedWFCIMService] uploadMedia:portraitData mediaType:Media_Type_PORTRAIT success:^(NSString *remoteUrl) {
+    [[WFCCIMService sharedWFCIMService] uploadMedia:nil mediaData:portraitData mediaType:Media_Type_PORTRAIT success:^(NSString *remoteUrl) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [hud hideAnimated:NO];
             if (remoteUrl.length) {

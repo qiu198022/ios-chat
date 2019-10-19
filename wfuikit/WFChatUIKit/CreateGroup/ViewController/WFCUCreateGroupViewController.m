@@ -83,7 +83,7 @@
   } else {
     UIImageView *portraitView = [[UIImageView alloc] initWithFrame:self.combineHeadView.bounds];
     WFCCGroupInfo *groupInfo = [[WFCCIMService sharedWFCIMService] getGroupInfo:self.groupId refresh:NO];
-    [portraitView sd_setImageWithURL:[NSURL URLWithString:groupInfo.portrait] placeholderImage:[UIImage imageNamed:@"PersonalChat"]];
+    [portraitView sd_setImageWithURL:[NSURL URLWithString:[groupInfo.portrait stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]] placeholderImage:[UIImage imageNamed:@"PersonalChat"]];
     [self.combineHeadView addSubview:portraitView];
   }
 }
@@ -138,7 +138,7 @@
                     index = j + (i-1)*column + firstCol;
                 }
                 WFCCUserInfo *user = [users objectAtIndex:index];
-                [imageView sd_setImageWithURL:[NSURL URLWithString:user.portrait] placeholderImage:[UIImage imageNamed:@"PersonalChat"]];
+                [imageView sd_setImageWithURL:[NSURL URLWithString:[user.portrait stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]] placeholderImage:[UIImage imageNamed:@"PersonalChat"]];
                 [self.combineHeadView addSubview:imageView];
             }
         }
@@ -209,7 +209,7 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info {
     hud.label.text = WFCString(@"PhotoUploading");
     [hud showAnimated:YES];
     
-    [[WFCCIMService sharedWFCIMService] uploadMedia:portraitData mediaType:Media_Type_PORTRAIT success:^(NSString *remoteUrl) {
+    [[WFCCIMService sharedWFCIMService] uploadMedia:nil mediaData:portraitData mediaType:Media_Type_PORTRAIT success:^(NSString *remoteUrl) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [hud hideAnimated:NO];
           if (createGroup) {

@@ -77,6 +77,8 @@
 @property (nonatomic, assign)double lastTypingTime;
 
 @property (nonatomic, strong)UIColor *textInputViewTintColor;
+
+@property (nonatomic, assign)CGRect backupFrame;
 @end
 
 @implementation WFCUChatInputBar
@@ -90,6 +92,7 @@
         self.mentionInfos = [[NSMutableArray alloc] init];
         self.conversation = conversation;
         self.lastTypingTime = 0;
+        self.backupFrame = CGRectZero;
     }
     return self;
 }
@@ -190,6 +193,12 @@
         [self.parentView bringSubviewToFront:_recordView];
         
         [self recordStart];
+    }
+}
+
+- (void)willAppear {
+    if (self.backupFrame.size.height) {
+        [self.delegate willChangeFrame:self.backupFrame withDuration:0.5 keyboardShowing:NO];
     }
 }
 
@@ -613,6 +622,7 @@
     CGFloat duration = [[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue];
     CGRect frame = CGRectMake(0, self.superview.bounds.size.height - self.bounds.size.height - height, self.superview.bounds.size.width, self.bounds.size.height);
     [self.delegate willChangeFrame:frame withDuration:duration keyboardShowing:YES];
+    self.backupFrame = frame;
     [UIView animateWithDuration:duration animations:^{
         self.frame = frame;
     }];
@@ -624,6 +634,7 @@
     CGFloat duration = [[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue];
     CGRect frame = CGRectMake(0, self.superview.bounds.size.height - self.bounds.size.height, self.superview.bounds.size.width, self.bounds.size.height);
     [self.delegate willChangeFrame:frame withDuration:duration keyboardShowing:NO];
+    self.backupFrame = frame;
     [UIView animateWithDuration:duration animations:^{
         self.frame = frame;
     }];
@@ -753,7 +764,20 @@
             }
             pvc.candidateUsers = candidateUser;
             pvc.withoutCheckBox = YES;
+            
+            
             __weak typeof(self)ws = self;
+            WFCCGroupInfo *groupInfo = [[WFCCIMService sharedWFCIMService] getGroupInfo:self.conversation.target refresh:NO];
+            WFCCGroupMember *member = [[WFCCIMService sharedWFCIMService] getGroupMember:self.conversation.target memberId:[WFCCNetworkService sharedInstance].userId];
+            if ([groupInfo.owner isEqualToString:[WFCCNetworkService sharedInstance].userId] || member.type == Member_Type_Manager) {
+                pvc.showMentionAll = YES;
+                pvc.mentionAll = ^{
+                    NSString *text = WFCString(@"@All");
+                    [ws didMentionType:2 user:nil range:NSMakeRange(range.location, text.length) text:text];
+                };
+            }
+            
+            
             pvc.selectResult = ^(NSArray<NSString *> *contacts) {
                 if (contacts.count == 1) {
                     WFCCUserInfo *userInfo = [[WFCCIMService sharedWFCIMService] getUserInfo:[contacts objectAtIndex:0] inGroup:self.conversation.target refresh:NO];
@@ -843,6 +867,7 @@
     
     float duration = 0.5f;
     [self.delegate willChangeFrame:baseFrame withDuration:duration keyboardShowing:YES];
+    self.backupFrame = baseFrame;
     __weak typeof(self)ws = self;
     [UIView animateWithDuration:duration animations:^{
         ws.textInputView.frame = tvFrame;
@@ -1044,9 +1069,18 @@
 }
 
 - (void)didCancelMentionAtRange:(NSRange)range {
-    [self.textInputView.textStorage replaceCharactersInRange:NSMakeRange(range.location, 0) withString:@"@"];
+    NSMutableAttributedString *attStr = [[NSMutableAttributedString alloc]initWithString:@"@"];
+    UIFont *font = [UIFont fontWithName:@"Heiti SC-Bold" size:16];
+    [attStr addAttribute:(__bridge NSString*)kCTFontAttributeName value:(id)CFBridgingRelease(CTFontCreateWithName((CFStringRef)font.fontName,
+                                                                                                                   16,
+                                                                                                                   NULL)) range:NSMakeRange(0, 1)];
     
+
+    [self.textInputView.textStorage
+     insertAttributedString:attStr  atIndex:range.location];
     range.location += 1;
+    range.length = 0;
+    
     self.textInputView.selectedRange = range;
     dispatch_async(dispatch_get_main_queue(), ^{
         if (!self.textInputView.isFirstResponder) {

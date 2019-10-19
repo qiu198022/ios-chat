@@ -35,7 +35,7 @@
     
   self.userInfo = [[WFCCIMService sharedWFCIMService] getUserInfo:self.userId refresh:NO];
     __weak typeof(self)ws = self;
-    [self.portraitView sd_setImageWithURL:[NSURL URLWithString:self.userInfo.portrait] placeholderImage:[UIImage imageNamed:@"PersonalChat"] completed:^(UIImage * _Nullable image, NSError * _Nullable error, SDImageCacheType cacheType, NSURL * _Nullable imageURL) {
+    [self.portraitView sd_setImageWithURL:[NSURL URLWithString:[self.userInfo.portrait stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]] placeholderImage:[UIImage imageNamed:@"PersonalChat"] completed:^(UIImage * _Nullable image, NSError * _Nullable error, SDImageCacheType cacheType, NSURL * _Nullable imageURL) {
         dispatch_async(dispatch_get_main_queue(), ^{
             ws.image = image;
         });
@@ -144,11 +144,11 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info {
   hud.label.text = WFCString(@"Updating");
   [hud showAnimated:YES];
   
-  [[WFCCIMService sharedWFCIMService] uploadMedia:data mediaType:Media_Type_PORTRAIT
+    [[WFCCIMService sharedWFCIMService] uploadMedia:nil mediaData:data mediaType:Media_Type_PORTRAIT
                                           success:^(NSString *remoteUrl) {
     [[WFCCIMService sharedWFCIMService] modifyMyInfo:@{@(Modify_Portrait):remoteUrl} success:^{
       dispatch_async(dispatch_get_main_queue(), ^{
-        [ws.portraitView sd_setImageWithURL:[NSURL URLWithString:remoteUrl] placeholderImage:previousImage];
+        [ws.portraitView sd_setImageWithURL:[NSURL URLWithString:[remoteUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]] placeholderImage:previousImage];
 
           [hud hideAnimated:YES];
           MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
@@ -199,7 +199,7 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info {
 }
 
 - (NSURL *)photoBrowser:(SDPhotoBrowser *)browser highQualityImageURLForIndex:(NSInteger)index {
-    return [NSURL URLWithString:self.userInfo.portrait];
+    return [NSURL URLWithString:[self.userInfo.portrait stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
 }
 
 - (void)photoBrowserDidDismiss:(SDPhotoBrowser *)browser {
