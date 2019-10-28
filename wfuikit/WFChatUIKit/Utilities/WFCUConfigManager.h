@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import "WFCUAppServiceProvider.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -23,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic, strong)UIColor *naviBackgroudColor;
 @property(nonatomic, strong)UIColor *naviTextColor;
+
+@property(nonatomic, weak)id<WFCUAppServiceProvider> appServiceProvider;
 @end
 
 NS_ASSUME_NONNULL_END
