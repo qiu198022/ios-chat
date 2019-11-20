@@ -162,7 +162,7 @@ typedef NS_ENUM(NSInteger, ConnectionStatus) {
 - (NSString *)getClientId;
 
 /**
- 连接服务器
+ 连接服务器，需要注意token跟clientId是强依赖的，一定要调用getClientId获取到clientId，然后用这个clientId获取token，这样connect才能成功，如果随便使用一个clientId获取到的token将无法链接成功。
 
  @param userId 用户Id
  @param token 密码
@@ -179,7 +179,8 @@ typedef NS_ENUM(NSInteger, ConnectionStatus) {
 - (void)disconnect:(BOOL)clearSession;
 
 /**
- 设置服务器信息
+ 设置服务器信息。host可以是IP，可以是域名，如果是域名的话只支持主域名或www域名，二级域名不支持！
+ 例如：example.com或www.example.com是支持的；xx.example.com或xx.yy.example.com是不支持的。
 
  @param host 服务器地址
  */

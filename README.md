@@ -40,6 +40,11 @@
 
 ![野火IM](http://static.wildfirechat.cn/download_qrcode.png)
 
+#### 加入野火官方体验交流群
+使用野火IM移动客户端扫码下面二维码（不是使用微信扫码），和野火IM的爱好者一起畅谈野火IM的问题和经验：
+
+![野火IM官方交流群](http://static.wildfirechat.cn/wildfirechat_official_group.jpeg)
+
 #### 应用截图
 ![ios-demo](http://static.wildfirechat.cn/ios-demo.gif)
 
@@ -66,7 +71,7 @@
 
 ### 编译
 
-工程中已经包含了编译好的协议栈，也可以自己编译，编译方法参考[协议栈库](https://github.com/wildfirechat/proto)文档。然后打开ios-chat.xcworkspace工程，对每个项目进行编译。
+打开ios-chat.xcworkspace工程，第一次编译时需要按照client/uikit/chat的顺序先后进行编译。
 
 ### 工程说明
 

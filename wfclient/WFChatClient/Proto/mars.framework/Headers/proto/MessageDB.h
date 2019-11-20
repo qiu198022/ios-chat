@@ -21,7 +21,7 @@ namespace mars {
             
         public:
             static MessageDB* Instance();
-            long InsertMessage(TMessage &msg);
+            long InsertMessage(TMessage &msg, bool updateConversationTime = true);
             
             void RegisterMessageFlag(int type, int flag);
             bool UpdateMessageContent(long messageId, TMessageContent &msgConstnet);
@@ -65,6 +65,8 @@ namespace mars {
             bool updateMessageUidAndTimestamp(long messageId, int64_t messageUid, int64_t sendTime);
             bool updateMessageRemoteMediaUrl(long messageId, const std::string &remoteMediaUrl);
             bool updateMessageLocalMediaPath(long messageId, const std::string &localMediaPath);
+            
+            int GetMsgTotalCount(int conversationType, const std::string &target, int line);
             
             TUnreadCount GetUnreadCount(int conversationType, const std::string &target, int line);
             
@@ -122,6 +124,9 @@ namespace mars {
             
             TChannelInfo GetChannelInfo(const std::string &channelId, bool refresh);
             long InsertOrUpdateChannelInfo(const TChannelInfo &channelInfo);
+            
+            bool BeginTransaction();
+            void CommitTransaction();
         private:
             bool GetConversationSilent(int conversationType, const std::string &target, int line);
             static MessageDB* instance_;

@@ -796,14 +796,17 @@ public:
     ~IMSearchUserCallback() {}
 };
 
-- (void)searchUser:(NSString *)keyword success:(void(^)(NSArray<WFCCUserInfo *> *machedUsers))successBlock error:(void(^)(int errorCode))errorBlock {
+- (void)searchUser:(NSString *)keyword
+             fuzzy:(BOOL)fuzzy
+           success:(void(^)(NSArray<WFCCUserInfo *> *machedUsers))successBlock
+             error:(void(^)(int errorCode))errorBlock {
     
     if (self.userSource) {
-        [self.userSource searchUser:keyword success:successBlock error:errorBlock];
+        [self.userSource searchUser:keyword fuzzy:fuzzy success:successBlock error:errorBlock];
         return;
     }
     
-    mars::stn::searchUser([keyword UTF8String], YES, 0, new IMSearchUserCallback(successBlock, errorBlock));
+    mars::stn::searchUser([keyword UTF8String], fuzzy, 0, new IMSearchUserCallback(successBlock, errorBlock));
 }
 
 - (BOOL)isMyFriend:(NSString *)userId {
@@ -1525,9 +1528,6 @@ WFCCGroupInfo *convertProtoGroupInfo(mars::stn::TGroupInfo tgi) {
     
     long msgId = mars::stn::MessageDB::Instance()->InsertMessage(tmsg);
     message.messageId = msgId;
-    if(msgId > 0) {
-        mars::stn::MessageDB::Instance()->updateConversationTimestamp(tmsg.conversationType, tmsg.target, tmsg.line, tmsg.timestamp);
-    }
     
     message.fromUser = sender;
     if (notify) {
@@ -1661,5 +1661,35 @@ WFCCGroupInfo *convertProtoGroupInfo(mars::stn::TGroupInfo tgi) {
         return nil;
     }
     return [NSString stringWithUTF8String:cstr.c_str()];
+}
+
+- (long)insertMessage:(WFCCMessage *)message {
+    mars::stn::TMessage tmsg;
+    fillTMessage(tmsg, message.conversation, message.content);
+    
+    if(message.status >= Message_Status_Unread) {
+        tmsg.direction = 1;
+    }
+    
+    tmsg.from = [message.fromUser UTF8String];
+    
+    tmsg.status = (mars::stn::MessageStatus)message.status;
+    tmsg.timestamp = message.serverTime;
+    
+    long msgId = mars::stn::MessageDB::Instance()->InsertMessage(tmsg);
+    
+    return msgId;
+}
+
+- (int)getMessageCount:(WFCCConversation *)conversation {
+    return mars::stn::MessageDB::Instance()->GetMsgTotalCount((int)conversation.type, [conversation.target UTF8String], conversation.line);
+}
+
+- (BOOL)beginTransaction {
+    return mars::stn::MessageDB::Instance()->BeginTransaction();
+}
+
+- (void)commitTransaction {
+    mars::stn::MessageDB::Instance()->CommitTransaction();
 }
 @end
